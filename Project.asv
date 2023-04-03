@@ -1,0 +1,14 @@
+guy_normal=imread("guy_normal.png");
+guy_depth=imread("guy_depth.png");
+guy_depth=rgb2gray(guy_depth);
+guy_depth=double(guy_depth);
+guy_normal=double(guy_normal);
+
+mask=zeros(size(guy_depth,1),size(guy_depth,2));
+mask(2:end-1,2:end-1)=1;
+%%
+output=Pomer(guy_normal,mask,guy_depth./255);
+%%
+output=output-min(min(output));
+output=output./max(max(output));
+imshow(output));
