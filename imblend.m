@@ -12,7 +12,7 @@ function  output = imblend(source3, mask3, target3)
         for row = 1: size(source, 1)
             for col = 1: size(source, 2)
                 flat = (row - 1) * size(source, 2) + col;
-                if mask(row, col) == 0
+                if mask(row, col) < 1e-2
                     ind = ind + 1;
                     sparse_i(ind) = flat;
                     sparse_j(ind) = flat;
@@ -22,31 +22,31 @@ function  output = imblend(source3, mask3, target3)
                     b_val = 0;
                     % n_is = [row - 1, row + 1, row, row];
                     % n_js = [col, col, col - 1, col + 1];
-                    n_is = [row - 1, row];
-                    n_js = [col, col - 1];
+                    n_is = [row - 1, row, row + 1, row];
+                    n_js = [col, col - 1, col, col + 1];
                     num_nei = 0;
-                    for n_ind = 1: 2
+                    for n_ind = 1: 4
                         n_i = n_is(n_ind);
                         n_j = n_js(n_ind);
                         if n_i >= 1 && n_i <= size(source, 1) && n_j >= 1 && n_j <= size(source, 2)
+                            cur_s = +source3(row, col, 1);
+                            if n_i == row - 1
+                                cur_s = +source3(row, col, 2);
+                            elseif n_i == row + 1
+                                cur_s = -source3(row + 1, col, 2);
+                            elseif n_j == col + 1
+                                cur_s = -source3(row, col + 1, 1);
+                            end
+
                             num_nei = num_nei + 1;
-                            if mask(n_i, n_j) == 1
+                            if mask(n_i, n_j) > 1e-2
                                 ind = ind + 1;
                                 sparse_i(ind) = flat;
                                 sparse_j(ind) = (n_i - 1) * size(source, 2) + n_j;
                                 sparse_s(ind) = -1;
-                                if n_i == row - 1
-                                    b_val = b_val + source(row, col, 0);
-                                else
-                                    b_val = b_val + source(row, col, 1);
-                                end
+                                b_val = b_val - cur_s;
                             else 
-                                if n_i == row - 1
-                                    b_val = b_val + source(row, col, 0) + target(n_i, n_j);
-                                else
-                                    b_val = b_val + source(row, col, 1) + target(n_i, n_j);
-                                end
-                                % b_val = b_val + source(row, col) - source(n_i, n_j) + target(n_i, n_j); 
+                                b_val = b_val - cur_s + target(n_i, n_j); 
                             end
                         end
                     end
@@ -54,7 +54,7 @@ function  output = imblend(source3, mask3, target3)
                     sparse_i(ind) = flat;
                     sparse_j(ind) = flat;
                     sparse_s(ind) = num_nei;
-                    b(flat) = b_val;
+                    b(flat) = b_val * mask(row, col) + target(row, col) * (1 - mask(row, col));
                 end
             end
         end
