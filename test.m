@@ -2,15 +2,110 @@ eps = 0.1;
 disparity_scale = 2^16 - 1;
 
 
-% normal = imread('./out/point_2_view_0_domain_rgb-2_normal.png');
-% disparity = imread('./out/point_2_view_0_domain_rgb-2-dpt_swin2_large_384.png');
-normal = imread('./out/guy_normal.png');
-disparity = imread('./out/guy_depth.png');
+% files = dir('./data/disparity/*.png');
+% disparities = cell(1, length(files));
+% for i = 1:length(files)
+%     disparities{i} = imread(strcat('./data/disparity/', files(i).name));
+%     disparities{i} = double(disparities{i});
+%     disparities{i} = disparities{i} / disparity_scal  e;
+% end
+
+% files = dir('./data/normal/*.png');
+% normals = cell(1, length(files));
+% for i = 1:length(files)
+%     normals{i} = imread(strcat('./data/normal/', files(i).name));
+%     normals{i} = double(normals{i});
+% end
+
+% files = dir('./data/rgb/*.png');
+% rgbs = cell(1, length(files));
+% for i = 1:length(files)
+%     rgbs{i} = imread(strcat('./data/rgb/', files(i).name));
+%     rgbs{i} = double(rgbs{i});
+% end
+
+% % iterate through disparity, normal, and rgb images
+
+% for cur_i = 1:length(disparities)
+%     disparity = disparities{cur_i};
+%     normal = normals{cur_i};
+%     rgb = rgbs{cur_i};
+
+%     depth = 1./(disparity + eps);
+%     depth = depth ./ max(depth(:));
+
+%     depth_normal = depth_to_normal(depth, normal);
+
+%     [r, c, z] = size(normal); 
+%     A = reshape(normal(:, :, 1:2), [r * c * 2, 1]);
+%     A = cat(2, A, ones(r * c * 2, 1));
+%     b = reshape(depth_normal(:, :, 1:2), [r * c * 2, 1]);
+%     x = lsqr(A, b);
+
+%     new_n = normal(:, :, :);
+%     new_n = new_n * x(1, 1) + x(2, 1);
+
+
+%     mask = ones(size(disparity, 1), size(disparity, 2));
+%     gaussian_filter = fspecial('gaussian', [3, 3], 3);
+%     depth_gauss = imfilter(depth, gaussian_filter);
+
+
+%     tmp_normal = depth_to_normal(depth_gauss, 0);
+%     dx = abs(tmp_normal(:, :, 1));
+%     dy = abs(tmp_normal(:, :, 2));
+%     eps = 0.015;
+%     for i = 1:size(mask, 1)
+%         for j = 1:size(mask, 2)
+%             if j + 1 <= size(mask, 2) && dx(i, j) > eps && dx(i, j + 1) < eps
+%                 mask(i, j + 1) = 0;
+% %                 mask(i, j) = 0;
+%             end
+%             if j - 1 >= 1 && dx(i, j) > eps && dx(i, j - 1) < eps
+%                 mask(i, j - 1) = 0;
+% %                 mask(i, j) = 0;
+%             end
+%             if i + 1 <= size(mask, 1) && dy(i, j) > eps && dy(i + 1, j) < eps
+%                 mask(i + 1, j) = 0;
+% %                 mask(i, j) = 0;
+%             end
+%             if i - 1 >= 1 && dy(i, j) > eps && dy(i - 1, j) < eps
+%                 mask(i - 1, j) = 0;
+% %                 mask(i, j) = 0;
+%             end
+%         end
+%     end
+
+%     new_depth = imblend(new_n, mask, depth);
+%     new_depth_normal = depth_to_normal(new_depth, 1);
+%     depth_normal = depth_to_normal(depth, 1);
+
+%     % save mask to data/out with r in name
+%     % imwrite(mask, strcat('./data/out/mask_', num2str(cur_i), '.png'))
+%     % imwrite(new_depth_normal, strcat('./data/out/ours_normal_', num2str(cur_i), '.png'))
+%     % imwrite(depth_normal, strcat('./data/out/normal_', num2str(cur_i), '.png'))
+%     % imwrite(new_depth, strcat('./data/out/ours_depth_', num2str(cur_i), '.png'))
+
+%     imwrite(mask, strcat('./data/out/', num2str(cur_i), '_mask', '.png'))
+%     imwrite(rescale(new_depth_normal, 0, 1), strcat('./data/out/', num2str(cur_i), '_normal_ours', '.png'))
+%     imwrite(rescale(depth_normal, 0, 1), strcat('./data/out/', num2str(cur_i), '_normal', '.png'))
+%     imwrite(rescale(new_depth, 0, 1), strcat('./data/out/', num2str(cur_i), '_depth_ours', '.png'))
+%     imwrite(rescale(depth, 0, 1), strcat('./data/out/', num2str(cur_i), '_depth', '.png'))
+%     imwrite(rescale(rgb, 0, 1), strcat('./data/out/', num2str(cur_i), '_rgb', '.png'))
+
+% end
+
+
+normal = imread('./out/point_2_view_0_domain_rgb-2_normal.png');
+disparity = imread('./out/point_2_view_0_domain_rgb-2-dpt_swin2_large_384.png');
+% normal = imread('./out/guy_normal.png');
+% disparity = imread('./out/guy_depth.png');
 
 % z_zero = normal(:, :) == 0;
 % normal(z_zero) = 1;
 normal = double(normal);
-% normal = normal ./ normal(:, :, 3);
+normal = normal ./ 255;
+% normal = normal ./ (normal(:, :, 3));
 % image_per_pixel_norm = sqrt(sum(normal.^2, 3));
 % normal = normal ./ image_per_pixel_norm;
 
@@ -19,6 +114,7 @@ disparity = double(disparity);
 disparity = disparity / disparity_scale;
 depth = 1./(disparity + eps);
 depth = depth ./ max(depth(:));
+depth(depth > 1) = 1;
 % normal = normal - normal(:, :, 3);
 % depth = disparity;
 
@@ -65,6 +161,30 @@ new_n = new_n * x(1, 1) + x(2, 1);
 % figure, imshow(rescale(depth_normal, 0, 1))
 
 
+
+
+
+
+
+% mask = ones(size(disparity, 1), size(disparity, 2));
+% new_depth = imblend(new_n, mask, depth);
+% % new_depth = rescale(new_depth, 0, 1);
+% % ref_depth = rescale(depth, 0, 1);
+% [r, c] = size(new_depth); 
+% A = reshape(ref_depth(:, :), [r * c, 1]);
+% A = cat(2, A, ones(r * c, 1));
+% b = reshape(new_depth(:, :), [r * c, 1]);
+% x = lsqr(A, b);
+% ref_depth = ref_depth * x(1, 1) + x(2, 1);
+
+% figure, imshow(rescale(depth_to_normal(depth, 1), 0, 1))
+% figure, imshow(rescale(depth_to_normal(ref_depth, 1), 0, 1))
+% depth = ref_depth;
+
+
+
+
+
 mask = ones(size(disparity, 1), size(disparity, 2));
 % mask(1, :) = 0;
 % mask(size(disparity, 1), :) = 0;
@@ -78,33 +198,54 @@ depth_gauss = imfilter(depth, gaussian_filter);
 tmp_normal = depth_to_normal(depth_gauss, 0);
 dx = abs(tmp_normal(:, :, 1));
 dy = abs(tmp_normal(:, :, 2));
+% dx = imdilate(dx, ones(3, 3));
+% dy = imdilate(dy, ones(3, 3));
+mask(dx > 0.02) = 0;
+mask(dy > 0.02) = 0;
+mask_ = imerode(mask, ones(16, 16));
+% mask = mask .* mask_;
+mask_ = mask_ + imdilate(dx > 0.02, ones(3, 3));
+mask_ = mask_ + imdilate(dy > 0.02, ones(3, 3));
+mask = mask_;
 % dx(dx < 0.1) = 0;
 % imshow(rescale(dx, 0, 1))
 % mask(dy > 0.2) = 0;
 % set mask to zero for edges, i.e., where the gradient is large
 % mask
 % set mask to zero if dx > eps
-eps = 0.01;
-for i = 1:size(mask, 1)
-    for j = 1:size(mask, 2)
-        if j + 1 <= size(mask, 2) && dx(i, j) > eps && dx(i, j + 1) < eps
-            mask(i, j + 1) = 0;
-            mask(i, j) = 0;
-        end
-        if j - 1 >= 1 && dx(i, j) > eps && dx(i, j - 1) < eps
-            mask(i, j - 1) = 0;
-            mask(i, j) = 0;
-        end
-        if i + 1 <= size(mask, 1) && dy(i, j) > eps && dy(i + 1, j) < eps
-            mask(i + 1, j) = 0;
-            mask(i, j) = 0;
-        end
-        if i - 1 >= 1 && dy(i, j) > eps && dy(i - 1, j) < eps
-            mask(i - 1, j) = 0;
-            mask(i, j) = 0;
-        end
-    end
-end
+eps = 0.02;
+nei_pixel = 1;
+% for i = 1:size(mask, 1)
+%     for j = 1:size(mask, 2)
+%         if j + nei_pixel <= size(mask, 2) && dx(i, j) > eps && dx(i, j + nei_pixel) < eps
+%             mask(i, j + nei_pixel) = 0;
+%         end
+%         if j - nei_pixel  >= 1 && dx(i, j) > eps && dx(i, j - nei_pixel) < eps
+%             mask(i, j - nei_pixel) = 0;
+%         end
+%         if i + nei_pixel <= size(mask, 1) && dy(i, j) > eps && dy(i + nei_pixel, j) < eps
+%             mask(i + nei_pixel, j) = 0;
+%         end
+%         if i - nei_pixel >= 1 && dy(i, j) > eps && dy(i - nei_pixel, j) < eps
+%             mask(i - nei_pixel, j) = 0;
+%         end
+%     end
+% end
+% for i = 1:10
+%     % set random row to zero
+%     mask(randi(size(mask, 1)), randi(size(mask, 2))) = 0;
+% %     mask(randi(size(mask, 1)), :) = 0;
+% 
+% end
+mask(1:5, :) = 1;
+mask(end - 5:end, :) = 1;
+mask(:, 1:5) = 1;
+mask(:, end - 5:end) = 1;
+% mask(200:300, 200:300) = 1;
+% mask = ones(size(disparity, 1), size(disparity, 2));
+
+
+
 
 % mask(1:30:end, :) = 0;
 
