@@ -104,6 +104,7 @@ disparity = imread('./out/point_2_view_0_domain_rgb-2-dpt_swin2_large_384.png');
 % z_zero = normal(:, :) == 0;
 % normal(z_zero) = 1;
 normal = double(normal);
+
 normal = normal ./ 255;
 % normal = normal ./ (normal(:, :, 3));
 % image_per_pixel_norm = sqrt(sum(normal.^2, 3));
@@ -195,26 +196,40 @@ depth_gauss = imfilter(depth, gaussian_filter);
 
 
 % figure, imshow(rescale(depth_normal_gauss, 0, 1))
-tmp_normal = depth_to_normal(depth_gauss, 0);
-dx = abs(tmp_normal(:, :, 1));
-dy = abs(tmp_normal(:, :, 2));
-% dx = imdilate(dx, ones(3, 3));
-% dy = imdilate(dy, ones(3, 3));
-mask(dx > 0.02) = 0;
-mask(dy > 0.02) = 0;
-mask_ = imerode(mask, ones(16, 16));
-% mask = mask .* mask_;
-mask_ = mask_ + imdilate(dx > 0.02, ones(3, 3));
-mask_ = mask_ + imdilate(dy > 0.02, ones(3, 3));
-mask = mask_;
+% tmp_normal = depth_to_normal(depth_gauss, 0);
+% dx = abs(tmp_normal(:, :, 1));
+% dy = abs(tmp_normal(:, :, 2));
+% % dx = imdilate(dx, ones(3, 3));
+% % dy = imdilate(dy, ones(3, 3));
+% mask(dx > 0.02) = 0;
+% mask(dy > 0.02) = 0;
+% mask_ = imerode(mask, ones(16, 16));
+% % mask = mask .* mask_;
+% mask_ = mask_ + imdilate(dx > 0.02, ones(3, 3));
+% mask_ = mask_ + imdilate(dy > 0.02, ones(3, 3));
+% mask = mask_;
+
+normal_gauss = imfilter(normal, gaussian_filter);
+normal_grey = rgb2gray(normal_gauss);
+normal_grad = imgradient(normal_grey);
+
+
 % dx(dx < 0.1) = 0;
 % imshow(rescale(dx, 0, 1))
 % mask(dy > 0.2) = 0;
 % set mask to zero for edges, i.e., where the gradient is large
 % mask
 % set mask to zero if dx > eps
-eps = 0.02;
-nei_pixel = 1;
+eps = 0.8;
+figure, imshow(normal_grad > eps)
+% mask = mask .* (normal_grad < eps);
+% filter normal gaussian
+
+tmp = graythresh(normal_gauss);
+figure, imshow(normal_grad > tmp)
+mask = mask .* (normal_grad < tmp);
+
+% nei_pixel = 1;
 % for i = 1:size(mask, 1)
 %     for j = 1:size(mask, 2)
 %         if j + nei_pixel <= size(mask, 2) && dx(i, j) > eps && dx(i, j + nei_pixel) < eps
@@ -257,6 +272,11 @@ new_depth = imblend(new_n, mask, depth);
 figure, imshow(rescale(new_depth, 0, 1))
 
 figure, imshow(rescale(depth, 0, 1))
+cm_inferno = inferno(256);
+colormap(cm_inferno)
+figure, imshow(rescale(depth, 0, 1))
+colormap(cm_inferno)
+figure, imshow(1 ./ (depth + 0.001))
 
 new_depth_normal = depth_to_normal(new_depth, 1);
 figure, imshow(rescale(new_depth_normal, 0, 1))
