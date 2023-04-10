@@ -272,11 +272,16 @@ new_depth = imblend(new_n, mask, depth);
 figure, imshow(rescale(new_depth, 0, 1))
 
 figure, imshow(rescale(depth, 0, 1))
+
+tmp = 1./depth
 cm_inferno = inferno(256);
 colormap(cm_inferno)
-figure, imshow(rescale(depth, 0, 1))
-colormap(cm_inferno)
-figure, imshow(1 ./ (depth + 0.001))
+figure, imshow(rescale(tmp, 0, 1))
+
+% colormap(cm_inferno)
+% figure, imshow(rescale(depth, 0, 1))
+% colormap(cm_inferno)
+% figure, imshow(1 ./ (depth + 0.001))
 
 new_depth_normal = depth_to_normal(new_depth, 1);
 figure, imshow(rescale(new_depth_normal, 0, 1))
