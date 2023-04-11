@@ -96,16 +96,19 @@ disparity_scale = 2^16 - 1;
 % end
 
 
-normal = imread('./out/point_2_view_0_domain_rgb-2_normal.png');
+normal_rgb = imread('./out/point_2_view_0_domain_rgb-2_normal.png');
 disparity = imread('./out/point_2_view_0_domain_rgb-2-dpt_swin2_large_384.png');
-% normal = imread('./out/guy_normal.png');
+% normal_rgb = imread('./out/guy_normal.png');
 % disparity = imread('./out/guy_depth.png');
 
 % z_zero = normal(:, :) == 0;
 % normal(z_zero) = 1;
-normal = double(normal);
+% normal = double(normal);
 
-normal = normal ./ 255;
+
+
+
+normal = double(normal_rgb) ./ 255;
 % normal = normal ./ (normal(:, :, 3));
 % image_per_pixel_norm = sqrt(sum(normal.^2, 3));
 % normal = normal ./ image_per_pixel_norm;
@@ -209,9 +212,54 @@ depth_gauss = imfilter(depth, gaussian_filter);
 % mask_ = mask_ + imdilate(dy > 0.02, ones(3, 3));
 % mask = mask_;
 
+eps = 0.02;
+thresh = 0.3
 normal_gauss = imfilter(normal, gaussian_filter);
 normal_grey = rgb2gray(normal_gauss);
 normal_grad = imgradient(normal_grey);
+normal_grad = abs(normal_grad);
+% figure, imshow(normal_grey)
+% figure, imshow(normal_grad > 0.1)
+depth_grad = imgradient(depth);
+depth_grad = abs(depth_grad);
+
+initial_ = normal_grad > 0.1;
+% keep edge only if surface changes direction
+initial = imerode(initial_, ones(2, 2));
+% figure, imshow(initial)
+thresh = 0.04;
+for i = 1:size(initial, 1)
+    for j = 1:size(initial, 2)
+        if initial(i, j) == 1
+            up = i - 1;
+            down = i + 1;
+            left = j - 1;
+            right = j + 1;
+            while up > 0 && initial_(up, j) == 1
+                up = up - 1;
+            end
+            while down < size(initial, 1) && initial(down, j) == 1
+                down = down + 1;
+            end
+            while left > 0 && initial_(i, left) == 1
+                left = left - 1;
+            end
+            while right < size(initial, 2) && initial_(i, right) == 1
+                right = right + 1;
+            end
+            up = max(up, 1);
+            down = min(down, size(initial, 1));
+            left = max(left, 1);
+            right = min(right, size(initial, 2));
+            if abs(normal_grey(up, j) - normal_grey(down, j)) < thresh || abs(normal_grey(i, left) - normal_grey(i, right)) < thresh
+                initial(i, j) = 0;
+            end
+            
+        end
+    end
+end
+
+
 
 
 % dx(dx < 0.1) = 0;
@@ -220,14 +268,39 @@ normal_grad = imgradient(normal_grey);
 % set mask to zero for edges, i.e., where the gradient is large
 % mask
 % set mask to zero if dx > eps
-eps = 0.8;
-figure, imshow(normal_grad > eps)
+% figure, imshow(depth_grad > eps)
 % mask = mask .* (normal_grad < eps);
 % filter normal gaussian
 
-tmp = graythresh(normal_gauss);
-figure, imshow(normal_grad > tmp)
-mask = mask .* (normal_grad < tmp);
+% mask = mask .* (depth_grad < eps);
+
+% get rid of mask if it's not edge in normal
+% mask = mask .* (normal_grad < 0.1);
+% figure, imshow((normal_grad > thresh) .* (depth_grad > eps))
+% mask = (normal_grad > thresh) .* (depth_grad > eps) ;
+% mask = 1 - mask;
+mask = 1 - initial;
+mask = ones(size(disparity, 1), size(disparity, 2));
+% mask = imerode(mask, ones(3, 3));
+mask = depth_grad < eps;
+
+
+numColors = 3;
+L = imsegkmeans(normal_rgb, numColors);
+B = labeloverlay(normal_rgb, L);
+% figure, imshow(B)
+title("Labeled Image RGB")
+
+% show first color only
+% figure, imshow(L == 1)
+L_grad = imgradient(L);
+mask = L_grad > 0;
+% mask = imdilate(mask, ones(5, 5));
+% figure, imshow(mask)
+% figure, imshow(depth_grad > eps)
+% mask = mask .* (depth_grad > eps);
+
+
 
 % nei_pixel = 1;
 % for i = 1:size(mask, 1)
@@ -252,10 +325,10 @@ mask = mask .* (normal_grad < tmp);
 % %     mask(randi(size(mask, 1)), :) = 0;
 % 
 % end
-mask(1:5, :) = 1;
-mask(end - 5:end, :) = 1;
-mask(:, 1:5) = 1;
-mask(:, end - 5:end) = 1;
+mask(1:5, :) = 0;
+mask(end - 5:end, :) = 0;
+mask(:, 1:5) = 0;
+mask(:, end - 5:end) = 0;
 % mask(200:300, 200:300) = 1;
 % mask = ones(size(disparity, 1), size(disparity, 2));
 
@@ -266,17 +339,24 @@ mask(:, end - 5:end) = 1;
 
 % new_depth = imblend(normal, mask, depth);
 % figure, imshow(rescale(new_depth, 0, 1))
+
+
+depth_grad_mask = (depth_grad > 0.2);
+% figure, imshow(B)
+% figure, imshow(normal)
+depth_grad_mask = imdilate(depth_grad_mask, ones(3, 3));
+figure, imshow(depth_grad_mask)
+
+mask = imdilate(mask, ones(3, 3));
+mask = mask | depth_grad_mask;
+% mask = imdilate(mask, ones(3, 3));
+mask = 1 - mask;
 figure, imshow(mask)
 
 new_depth = imblend(new_n, mask, depth);
 figure, imshow(rescale(new_depth, 0, 1))
 
 figure, imshow(rescale(depth, 0, 1))
-
-tmp = 1./depth
-cm_inferno = inferno(256);
-colormap(cm_inferno)
-figure, imshow(rescale(tmp, 0, 1))
 
 % colormap(cm_inferno)
 % figure, imshow(rescale(depth, 0, 1))
@@ -289,5 +369,12 @@ figure, imshow(rescale(new_depth_normal, 0, 1))
 depth_normal = depth_to_normal(depth, 1);
 figure, imshow(rescale(depth_normal, 0, 1))
 
+cm_inferno = inferno(100);
+% colormap(cm_inferno)
+colormap(cm_inferno)
+figure, imshow(rescale(new_depth, 0, 1))
+colormap(cm_inferno)
 
-imwrite(out, './out/new_depth.png')
+
+
+% imwrite(out, './out/new_depth.png')
