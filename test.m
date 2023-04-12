@@ -124,7 +124,7 @@ depth(depth > 1) = 1;
 
 % TODO make normal z that are 0 to 1
 
-depth_normal = depth_to_normal(depth, normal);
+depth_normal = depth_to_normal(depth, 0);
 % figure, imshow(abs(depth_normal(:, :, 1)))
 % figure, imshow(depth_normal(:, :, 2))
 
@@ -216,48 +216,49 @@ eps = 0.02;
 thresh = 0.3
 normal_gauss = imfilter(normal, gaussian_filter);
 normal_grey = rgb2gray(normal_gauss);
-normal_grad = imgradient(normal_grey);
-normal_grad = abs(normal_grad);
+
+
+
 % figure, imshow(normal_grey)
 % figure, imshow(normal_grad > 0.1)
 depth_grad = imgradient(depth);
 depth_grad = abs(depth_grad);
 
-initial_ = normal_grad > 0.1;
-% keep edge only if surface changes direction
-initial = imerode(initial_, ones(2, 2));
-% figure, imshow(initial)
-thresh = 0.04;
-for i = 1:size(initial, 1)
-    for j = 1:size(initial, 2)
-        if initial(i, j) == 1
-            up = i - 1;
-            down = i + 1;
-            left = j - 1;
-            right = j + 1;
-            while up > 0 && initial_(up, j) == 1
-                up = up - 1;
-            end
-            while down < size(initial, 1) && initial(down, j) == 1
-                down = down + 1;
-            end
-            while left > 0 && initial_(i, left) == 1
-                left = left - 1;
-            end
-            while right < size(initial, 2) && initial_(i, right) == 1
-                right = right + 1;
-            end
-            up = max(up, 1);
-            down = min(down, size(initial, 1));
-            left = max(left, 1);
-            right = min(right, size(initial, 2));
-            if abs(normal_grey(up, j) - normal_grey(down, j)) < thresh || abs(normal_grey(i, left) - normal_grey(i, right)) < thresh
-                initial(i, j) = 0;
-            end
+% initial_ = normal_grad > 0.1;
+% % keep edge only if surface changes direction
+% initial = imerode(initial_, ones(2, 2));
+% % figure, imshow(initial)
+% thresh = 0.04;
+% for i = 1:size(initial, 1)
+%     for j = 1:size(initial, 2)
+%         if initial(i, j) == 1
+%             up = i - 1;
+%             down = i + 1;
+%             left = j - 1;
+%             right = j + 1;
+%             while up > 0 && initial_(up, j) == 1
+%                 up = up - 1;
+%             end
+%             while down < size(initial, 1) && initial(down, j) == 1
+%                 down = down + 1;
+%             end
+%             while left > 0 && initial_(i, left) == 1
+%                 left = left - 1;
+%             end
+%             while right < size(initial, 2) && initial_(i, right) == 1
+%                 right = right + 1;
+%             end
+%             up = max(up, 1);
+%             down = min(down, size(initial, 1));
+%             left = max(left, 1);
+%             right = min(right, size(initial, 2));
+%             if abs(normal_grey(up, j) - normal_grey(down, j)) < thresh || abs(normal_grey(i, left) - normal_grey(i, right)) < thresh
+%                 initial(i, j) = 0;
+%             end
             
-        end
-    end
-end
+%         end
+%     end
+% end
 
 
 
@@ -279,7 +280,7 @@ end
 % figure, imshow((normal_grad > thresh) .* (depth_grad > eps))
 % mask = (normal_grad > thresh) .* (depth_grad > eps) ;
 % mask = 1 - mask;
-mask = 1 - initial;
+% mask = 1 - initial;
 mask = ones(size(disparity, 1), size(disparity, 2));
 % mask = imerode(mask, ones(3, 3));
 mask = depth_grad < eps;
@@ -325,10 +326,6 @@ mask = L_grad > 0;
 % %     mask(randi(size(mask, 1)), :) = 0;
 % 
 % end
-mask(1:5, :) = 0;
-mask(end - 5:end, :) = 0;
-mask(:, 1:5) = 0;
-mask(:, end - 5:end) = 0;
 % mask(200:300, 200:300) = 1;
 % mask = ones(size(disparity, 1), size(disparity, 2));
 
@@ -348,12 +345,43 @@ depth_grad_mask = imdilate(depth_grad_mask, ones(3, 3));
 figure, imshow(depth_grad_mask)
 
 mask = imdilate(mask, ones(3, 3));
-mask = mask | depth_grad_mask;
-% mask = imdilate(mask, ones(3, 3));
-mask = 1 - mask;
-figure, imshow(mask)
+% mask = mask | depth_grad_mask;
 
-new_depth = imblend(new_n, mask, depth);
+depth_grad = imgradient(depth);
+depth_grad = abs(depth_grad) / 2;
+% mask = mask + depth_grad;
+
+
+
+
+% mask = imdilate(mask, ones(3, 3));
+normal_grad = imgradient(normal_grey);
+% mask = abs(depth_grad) + (abs(normal_grad) > 0.1);
+mask = abs(depth_grad) + (abs(normal_grad));
+mask = mask ./ max(mask(:));
+mask = 1 - mask;
+
+mask(1:5, :) = 0;
+mask(end - 5:end, :) = 0;
+mask(:, 1:5) = 0;
+mask(:, end - 5:end) = 0;
+
+for i = 1:10
+    % set random row to zero
+    % mask(randi(size(mask, 1)), randi(size(mask, 2))) = 0.5;
+    sz = 40
+    rnd_i = randi(size(mask, 1) - sz);
+    rnd_j = randi(size(mask, 2) - sz);
+    % 10x10
+    mask(rnd_i:rnd_i + sz, rnd_j:rnd_j + sz) = 0.9;
+    % mask(randi(size(mask, 1)), :) = 0.1;
+    % mask(:, randi(size(mask, 2))) = 0.1;
+end
+
+figure, imshow(mask)
+% mask(mask == 1) = 0.1;
+depth_normal = depth_to_normal(depth, 0);
+new_depth = imblend(new_n, mask, depth, depth_normal);
 figure, imshow(rescale(new_depth, 0, 1))
 
 figure, imshow(rescale(depth, 0, 1))
