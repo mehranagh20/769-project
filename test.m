@@ -1,3 +1,4 @@
+close all
 eps = 0.1;
 disparity_scale = 2^16 - 1;
 
@@ -213,7 +214,7 @@ depth_gauss = imfilter(depth, gaussian_filter);
 % mask = mask_;
 
 eps = 0.02;
-thresh = 0.3
+thresh = 0.3;
 normal_gauss = imfilter(normal, gaussian_filter);
 normal_grey = rgb2gray(normal_gauss);
 
@@ -286,16 +287,16 @@ mask = ones(size(disparity, 1), size(disparity, 2));
 mask = depth_grad < eps;
 
 
-numColors = 3;
-L = imsegkmeans(normal_rgb, numColors);
-B = labeloverlay(normal_rgb, L);
+% numColors = 3;
+% L = imsegkmeans(normal_rgb, numColors);
+% B = labeloverlay(normal_rgb, L);
 % figure, imshow(B)
-title("Labeled Image RGB")
+% title("Labeled Image RGB")
 
 % show first color only
 % figure, imshow(L == 1)
-L_grad = imgradient(L);
-mask = L_grad > 0;
+% L_grad = imgradient(L);
+% mask = L_grad > 0;
 % mask = imdilate(mask, ones(5, 5));
 % figure, imshow(mask)
 % figure, imshow(depth_grad > eps)
@@ -339,10 +340,11 @@ mask = L_grad > 0;
 
 
 depth_grad_mask = (depth_grad > 0.2);
+% normal_grad_mask = normal_grad > 0.5;
 % figure, imshow(B)
 % figure, imshow(normal)
 depth_grad_mask = imdilate(depth_grad_mask, ones(3, 3));
-figure, imshow(depth_grad_mask)
+% figure, imshow(depth_grad_mask)
 
 mask = imdilate(mask, ones(3, 3));
 % mask = mask | depth_grad_mask;
@@ -356,10 +358,39 @@ depth_grad = abs(depth_grad) / 2;
 
 % mask = imdilate(mask, ones(3, 3));
 normal_grad = imgradient(normal_grey);
+normal_grad = abs(normal_grad) / 2;
+normal_grad(normal_grad > 1) = 1;
+% normal_grad(normal_grad < 0.5) = 0;
 % mask = abs(depth_grad) + (abs(normal_grad) > 0.1);
-mask = abs(depth_grad) + (abs(normal_grad));
+edges = abs(depth_grad);
+edges(edges > 1) = 1;
+combined = edges .* normal_grad;
+% combined = combined ./ max(combined(:));
+combined = combined > 0.1;
+% edges(edges < 0.1) = 0;
+% mask = edges > 0.05;
+
+% mask = (depth_grad > 0.05);
+% mask = mask + (depth_grad < 0.1 & normal_grad > 0.02) / 2;
+
+
+% mask = combined + (edges > 0.1);
+mask = combined;
+
+% mask = mask + (1 - depth) / 10;
+% mask = mask + (normal_grad > 0.5);
+% mask = normal_grad + depth_grad;
+mask = imdilate(mask, ones(8, 8));
+% mask = mask ./ 5;
 mask = mask ./ max(mask(:));
+
+mask = edges + normal_grad / 5 + (edges > 0.02) / 10;
+% mask = mask ./ max(mask(:));
+mask(mask > 1) = 1;
+mask = imdilate(mask, ones(8, 8));
 mask = 1 - mask;
+% mask = mask ./ 2;
+
 
 mask(1:5, :) = 0;
 mask(end - 5:end, :) = 0;
@@ -369,11 +400,12 @@ mask(:, end - 5:end) = 0;
 for i = 1:10
     % set random row to zero
     % mask(randi(size(mask, 1)), randi(size(mask, 2))) = 0.5;
-    sz = 40
+    sz = 60
     rnd_i = randi(size(mask, 1) - sz);
     rnd_j = randi(size(mask, 2) - sz);
     % 10x10
-    mask(rnd_i:rnd_i + sz, rnd_j:rnd_j + sz) = 0.9;
+    % mask(rnd_i:rnd_i + sz, rnd_j:rnd_j + sz) = 0.8;
+    mask(rnd_i:rnd_i + sz, rnd_j:rnd_j + sz) = min(mask(rnd_i:rnd_i + sz, rnd_j:rnd_j + sz), 0.8);
     % mask(randi(size(mask, 1)), :) = 0.1;
     % mask(:, randi(size(mask, 2))) = 0.1;
 end
@@ -382,9 +414,22 @@ figure, imshow(mask)
 % mask(mask == 1) = 0.1;
 depth_normal = depth_to_normal(depth, 0);
 new_depth = imblend(new_n, mask, depth, depth_normal);
-figure, imshow(rescale(new_depth, 0, 1))
 
-figure, imshow(rescale(depth, 0, 1))
+% fit a and b such that a * new_depth + b = depth
+A = [new_depth(:), ones(size(new_depth(:)))];
+b = depth(:);
+x = A \ b;
+fitted = x(1) * new_depth + x(2);
+
+% fit a and b such that a * new_depth + b = depth
+A = [fitted(:), ones(size(fitted(:)))];
+b = depth(:);
+x = A \ b;
+fitted = x(1) * fitted + x(2);
+% figure, imshow(rescale(depth, 0, 1))
+% figure, imshow(fitted)
+
+% figure, imshow(rescale(depth, 0, 1))
 
 % colormap(cm_inferno)
 % figure, imshow(rescale(depth, 0, 1))
@@ -399,9 +444,11 @@ figure, imshow(rescale(depth_normal, 0, 1))
 
 cm_inferno = inferno(100);
 % colormap(cm_inferno)
-colormap(cm_inferno)
-figure, imshow(rescale(new_depth, 0, 1))
-colormap(cm_inferno)
+figure, imshow(rescale(fitted, 0, 1))
+colormap(cm_inferno);
+
+figure, imshow(rescale(depth, 0, 1))
+colormap(cm_inferno);
 
 
 
