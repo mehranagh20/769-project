@@ -410,7 +410,7 @@ for i = 1:10
     % mask(:, randi(size(mask, 2))) = 0.1;
 end
 
-figure, imshow(mask)
+% figure, imshow(mask)
 % mask(mask == 1) = 0.1;
 depth_normal = depth_to_normal(depth, 0);
 new_depth = imblend(new_n, mask, depth, depth_normal);
@@ -437,18 +437,36 @@ fitted = x(1) * fitted + x(2);
 % figure, imshow(1 ./ (depth + 0.001))
 
 new_depth_normal = depth_to_normal(new_depth, 1);
-figure, imshow(rescale(new_depth_normal, 0, 1))
+% figure, imshow(rescale(new_depth_normal, 0, 1))
 
 depth_normal = depth_to_normal(depth, 1);
-figure, imshow(rescale(depth_normal, 0, 1))
+% figure, imshow(rescale(depth_normal, 0, 1))
 
 cm_inferno = inferno(100);
 % colormap(cm_inferno)
-figure, imshow(rescale(fitted, 0, 1))
+% figure, imshow(rescale(fitted, 0, 1))
 colormap(cm_inferno);
 
-figure, imshow(rescale(depth, 0, 1))
+% figure, imshow(rescale(depth, 0, 1))
 colormap(cm_inferno);
+
+% depth_gt = imread('/Users/mehran/sfu/courses/769/project/new-data-out/speaker_depth_gt.png');
+depth_gt = imread('/Users/mehran/sfu/courses/769/project/new-data-out/speaker_depth_gt_rgb.png');
+depth_gt = imresize(depth_gt, size(fitted));
+figure(1)
+imshow(rescale(depth_gt, 0, 1))
+figure(2)
+imshow(rescale(fitted, 0, 1))
+
+
+% make depth_gt the same size
+% fit a and b to fitted and depth_gt
+A = [fitted(:), ones(size(fitted(:)))];
+b = depth_gt(:);
+x = A \ b;
+new_fitted = x(1) * fitted + x(2);
+figure(3)
+imshow(rescale(new_fitted, 0, 1))
 
 
 
