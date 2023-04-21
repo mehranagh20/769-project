@@ -3,13 +3,15 @@ eps = 0.1;
 disparity_scale = 2^16 - 1;
 
 
+base = './test-data-final/';
 dir_name = './test-data-final/';
-% dir_name = './test_test/';
+% dir_name = './test-data-final/motorcycle';
+
 
 files = dir(strcat(dir_name, '*depth.png'));
 disparities = cell(1, length(files));
 for i = 1:length(files)
-    disparities{i} = imread(strcat(dir_name, files(i).name));
+    disparities{i} = imread(strcat(base, files(i).name));
     disparities{i} = double(disparities{i});
     disparities{i} = disparities{i} / disparity_scale;
 end
@@ -17,14 +19,14 @@ end
 files = dir(strcat(dir_name, '*normal.png'));
 normals = cell(1, length(files));
 for i = 1:length(files)
-    normals{i} = imread(strcat(dir_name, files(i).name));
+    normals{i} = imread(strcat(base, files(i).name));
     normals{i} = double(normals{i});
 end
 
 files = dir(strcat(dir_name, '*rgb.png'));
 rgbs = cell(1, length(files));
 for i = 1:length(files)
-    rgbs{i} = imread(strcat(dir_name, files(i).name));
+    rgbs{i} = imread(strcat(base, files(i).name));
     rgbs{i} = double(rgbs{i});
 end
 
@@ -56,9 +58,6 @@ for cur_i = 1:length(disparities)
     new_n = new_n * x(1, 1) + x(2, 1);
     normal = new_n;
 
-    eps = 0.02;
-    thresh = 0.3;
-
     depth_grad = imgradient(depth);
     depth_grad = abs(depth_grad);
 
@@ -84,7 +83,7 @@ for cur_i = 1:length(disparities)
         sz = 60;
         rnd_i = randi(size(mask, 1) - sz);
         rnd_j = randi(size(mask, 2) - sz);
-        mask(rnd_i:rnd_i + sz, rnd_j:rnd_j + sz) = min(mask(rnd_i:rnd_i + sz, rnd_j:rnd_j + sz), 0.8);
+        % mask(rnd_i:rnd_i + sz, rnd_j:rnd_j + sz) = min(mask(rnd_i:rnd_i + sz, rnd_j:rnd_j + sz), 0.8);
     end
 
     % figure, imshow(mask)
@@ -92,14 +91,14 @@ for cur_i = 1:length(disparities)
     new_depth = imblend(new_n, mask, depth, depth_normal);
 
     new_depth = rescale(new_depth, 0, 1);
-    depht = rescale(depth, 0, 1);
+    depth = rescale(depth, 0, 1);
 
     A = [new_depth(:), ones(size(new_depth(:)))];
     b = depth(:);
     x = A \ b;
     fitted = x(1) * new_depth + x(2);
 
-    new_depth_normal = depth_to_normal(new_depth, 1);
+    new_depth_normal = depth_to_normal(fitted, 1);
     % figure, imshow(rescale(new_depth_normal, 0, 1))
 
     depth_normal = depth_to_normal(depth, 1);
@@ -108,14 +107,16 @@ for cur_i = 1:length(disparities)
     cm_inferno = inferno(100);
 
 
-    imwrite(mask, strcat('./data/out/', num2str(cur_i), '_mask', '.png'))
-    imwrite(rescale(new_depth_normal, 0, 1), strcat('./data/out/', num2str(cur_i), '_normal_ours', '.png'))
-    imwrite(rescale(depth_normal, 0, 1), strcat('./data/out/', num2str(cur_i), '_normal', '.png'))
-    imwrite(rescale(rgb, 0, 1), strcat('./data/out/', num2str(cur_i), '_rgb', '.png'))
-    imwrite(ind2rgb(uint8(fitted * 255), cm_inferno), strcat('./data/out/', num2str(cur_i), '_depth_ours', '.png'))
-    imwrite(ind2rgb(uint8(depth * 255), cm_inferno), strcat('./data/out/', num2str(cur_i), '_depth', '.png'))
-    imwrite(rescale(fitted, 0, 1), strcat('./data/out/', num2str(cur_i), '_depth_grey_ours', '.png'))
-    imwrite(rescale(depth, 0, 1), strcat('./data/out/', num2str(cur_i), '_depth_grey', '.png'))
+    fitted = fitted ./ max(fitted(:));
+    depth = depth ./ max(depth(:));
+    imwrite(mask, strcat('./data/out/', files(cur_i).name, '_mask', '.png'))
+    imwrite(rescale(new_depth_normal, 0, 1), strcat('./data/out/',files(cur_i).name, '_normal_ours', '.png'))
+    imwrite(rescale(depth_normal, 0, 1), strcat('./data/out/', files(cur_i).name, '_normal', '.png'))
+    imwrite(rescale(rgb, 0, 1), strcat('./data/out/', files(cur_i).name, '_rgb', '.png'))
+    imwrite(ind2rgb(uint8(fitted * 255), cm_inferno), strcat('./data/out/', files(cur_i).name, '_depth_ours', '.png'))
+    imwrite(ind2rgb(uint8(depth * 255), cm_inferno), strcat('./data/out/', files(cur_i).name, '_depth', '.png'))
+    imwrite(rescale(fitted, 0, 1), strcat('./data/out/', files(cur_i).name, '_depth_grey_ours', '.png'))
+    imwrite(rescale(depth, 0, 1), strcat('./data/out/', files(cur_i).name, '_depth_grey', '.png'))
 
 end
 

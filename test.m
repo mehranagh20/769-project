@@ -405,7 +405,7 @@ for i = 1:10
     rnd_j = randi(size(mask, 2) - sz);
     % 10x10
     % mask(rnd_i:rnd_i + sz, rnd_j:rnd_j + sz) = 0.8;
-    mask(rnd_i:rnd_i + sz, rnd_j:rnd_j + sz) = min(mask(rnd_i:rnd_i + sz, rnd_j:rnd_j + sz), 0.8);
+    % mask(rnd_i:rnd_i + sz, rnd_j:rnd_j + sz) = min(mask(rnd_i:rnd_i + sz, rnd_j:rnd_j + sz), 0.8);
     % mask(randi(size(mask, 1)), :) = 0.1;
     % mask(:, randi(size(mask, 2))) = 0.1;
 end
