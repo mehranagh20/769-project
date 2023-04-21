@@ -97,8 +97,8 @@ disparity_scale = 2^16 - 1;
 % end
 
 
-normal_rgb = imread('./out/point_2_view_0_domain_rgb-2_normal.png');
-disparity = imread('./out/point_2_view_0_domain_rgb-2-dpt_swin2_large_384.png');
+normal_rgb = imread('/Users/mehran/sfu/courses/769/project/new-data-out/speaker_normal.png');
+disparity = imread('/Users/mehran/sfu/courses/769/project/new-data-out/speaker_rgb_depth.png');
 % normal_rgb = imread('./out/guy_normal.png');
 % disparity = imread('./out/guy_depth.png');
 
@@ -451,12 +451,13 @@ colormap(cm_inferno);
 colormap(cm_inferno);
 
 % depth_gt = imread('/Users/mehran/sfu/courses/769/project/new-data-out/speaker_depth_gt.png');
-depth_gt = imread('/Users/mehran/sfu/courses/769/project/new-data-out/speaker_depth_gt_rgb.png');
+depth_gt = imread('//Users/mehran/sfu/courses/769/project/new-data-out/speaker_depth_gt.png');
 depth_gt = imresize(depth_gt, size(fitted));
-figure(1)
-imshow(rescale(depth_gt, 0, 1))
-figure(2)
-imshow(rescale(fitted, 0, 1))
+depth_gt = double(depth_gt);
+% figure(1)
+% imshow(rescale(depth_gt, 0, 1))
+% figure(2)
+% imshow(rescale(fitted, 0, 1))
 
 
 % make depth_gt the same size
@@ -465,9 +466,30 @@ A = [fitted(:), ones(size(fitted(:)))];
 b = depth_gt(:);
 x = A \ b;
 new_fitted = x(1) * fitted + x(2);
-figure(3)
-imshow(rescale(new_fitted, 0, 1))
+% figure(3)
+% imshow(rescale(new_fitted, 0, 1))
 
+% figure(4)
+% imshow(rescale(depth, 0, 1))
+
+ours_disparity = 1 ./ (new_depth + 0.001);
+depth_disparity = 1 ./ (depth + 0.001);
+depth_gt_disparity = 1 ./ (depth_gt + 0.001);
+imwrite(rescale(ours_disparity, 0, 1), './out/ours_disparity.png')
+imwrite(rescale(depth_disparity, 0, 1), './out/depth_disparity.png')
+imwrite(rescale(depth_gt_disparity, 0, 1), './out/depth_gt_disparity.png')
+
+figure(5)
+imshow(rescale(fitted_disparity, 0, 1))
+
+
+fitted = rescale(new_fitted, 0, 1);
+depth = rescale(depth, 0, 1);
+depth_gt = rescale(depth_gt, 0, 1);
+
+imwrite(fitted, './out/ours.png')
+imwrite(depth, './out/depth.png')
+imwrite(depth_gt, './out/depth_gt.png')
 
 
 % imwrite(out, './out/new_depth.png')
