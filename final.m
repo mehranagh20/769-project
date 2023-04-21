@@ -3,8 +3,8 @@ eps = 0.1;
 disparity_scale = 2^16 - 1;
 
 
-base = './test-data-final/';
-dir_name = './test-data-final/';
+base = './new-data-out/';
+dir_name = './new-data-out/';
 % dir_name = './test-data-final/motorcycle';
 
 
