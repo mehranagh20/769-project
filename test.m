@@ -451,36 +451,41 @@ colormap(cm_inferno);
 colormap(cm_inferno);
 
 % depth_gt = imread('/Users/mehran/sfu/courses/769/project/new-data-out/speaker_depth_gt.png');
-depth_gt = imread('//Users/mehran/sfu/courses/769/project/new-data-out/speaker_depth_gt.png');
-depth_gt = imresize(depth_gt, size(fitted));
+depth_gt = imread('/Users/mehran/sfu/courses/769/project/new-data-out/speaker_depth_gt.png');
+% depth_gt = imresize(depth_gt, size(fitted));
 depth_gt = double(depth_gt);
+depth_gt = rescale(depth_gt, 0, 1);
 % figure(1)
 % imshow(rescale(depth_gt, 0, 1))
 % figure(2)
 % imshow(rescale(fitted, 0, 1))
 
 
-% make depth_gt the same size
-% fit a and b to fitted and depth_gt
-A = [fitted(:), ones(size(fitted(:)))];
-b = depth_gt(:);
-x = A \ b;
-new_fitted = x(1) * fitted + x(2);
-% figure(3)
-% imshow(rescale(new_fitted, 0, 1))
-
 % figure(4)
 % imshow(rescale(depth, 0, 1))
 
 ours_disparity = 1 ./ (new_depth + 0.001);
+ours_disparity = rescale(ours_disparity, 0, 1);
 depth_disparity = 1 ./ (depth + 0.001);
-depth_gt_disparity = 1 ./ (depth_gt + 0.001);
+depth_disparity = rescale(depth_disparity, 0, 1);
+depth_gt_disparity = 1 ./ (depth_gt + 0.01);
+depth_gt_disparity = rescale(depth_gt_disparity, 0, 1);
+
+% A = [ours_disparity(:), ones(size(ours_disparity(:)))];
+% b = depth_gt_disparity(:);
+% x = A \ b;
+% ours_disparity = x(1) * ours_disparity + x(2);
+
+
+
 imwrite(rescale(ours_disparity, 0, 1), './out/ours_disparity.png')
 imwrite(rescale(depth_disparity, 0, 1), './out/depth_disparity.png')
 imwrite(rescale(depth_gt_disparity, 0, 1), './out/depth_gt_disparity.png')
 
 figure(5)
-imshow(rescale(fitted_disparity, 0, 1))
+imshow(rescale(depth_gt_disparity, 0, 1))
+figure(6)
+imshow(rescale(ours_disparity, 0, 1))
 
 
 fitted = rescale(new_fitted, 0, 1);

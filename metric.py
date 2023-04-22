@@ -1,6 +1,7 @@
 import numpy as np
 from skimage.segmentation import slic
 from imageio import imread
+import sys
 
 
 def compute_d3r(pred, target, freq_threshold, threshold, nsamples, debug=False, mask=None):
@@ -88,13 +89,13 @@ def extract_pointpairs(gtdisp, nsamples):
 
 
 
-# pred = imread('/Users/mehran/sfu/courses/769/project/out/ours_disparity.png')
-pred = imread('/Users/mehran/sfu/courses/769/project/out/depth_disparity.png')
-target = imread('/Users/mehran/sfu/courses/769/project/out/depth_gt_disparity.png')
+pred = imread(sys.argv[1])
+target = imread(sys.argv[2])
+
 pred = pred.astype(np.float32) / 255
 target = target.astype(np.float32) / 255
 print(pred.shape)
 print(target.shape)
 
-res = compute_d3r(pred, target, freq_threshold=0.1, threshold=0.1, nsamples=1000, debug=False, mask=None)
+res = compute_d3r(pred, target, freq_threshold=0.05, threshold=0.05, nsamples=1000, debug=False, mask=None)
 print(res)
