@@ -78,9 +78,9 @@ for cur_i = 1:length(disparities)
     mask = depth_grad < eps;
 
 
-    mask = depth_grad + normal_grad / 3 + (depth_grad > 0.01) / 5;
+    mask = depth_grad + normal_grad / 5 + (depth_grad > 0.02) / 8;
     mask(mask > 1) = 1;
-    mask = imdilate(mask, ones(16, 16));
+    mask = imdilate(mask, ones(4, 4));
     mask = 1 - mask;
 
     mask(1:5, :) = 0;
@@ -92,7 +92,7 @@ for cur_i = 1:length(disparities)
         sz = 60;
         rnd_i = randi(size(mask, 1) - sz);
         rnd_j = randi(size(mask, 2) - sz);
-        mask(rnd_i:rnd_i + sz, rnd_j:rnd_j + sz) = min(mask(rnd_i:rnd_i + sz, rnd_j:rnd_j + sz), 0.8);
+%         mask(rnd_i:rnd_i + sz, rnd_j:rnd_j + sz) = min(mask(rnd_i:rnd_i + sz, rnd_j:rnd_j + sz), 0.8);
     end
 
     % figure, imshow(mask)
@@ -113,7 +113,7 @@ for cur_i = 1:length(disparities)
     depth_normal = depth_to_normal(depth, 1);
     % figure, imshow(rescale(depth_normal, 0, 1))
 
-    cm_inferno = inferno(100);
+    cm_inferno = inferno;
 
 
     fitted = fitted ./ max(fitted(:));
@@ -128,23 +128,24 @@ for cur_i = 1:length(disparities)
     imwrite(rescale(depth, 0, 1), strcat('./data/out/', files(cur_i).name, '_depth_grey', '.png'))
 
     % fit a and b for new_depth and depth_gt
-    A = [new_depth(:), ones(size(new_depth(:)))];
-    b = depth_gt{cur_i}(:);
-    x = A \ b;
-%     new_depth = x(1) * new_depth + x(2);
-    new_depth_dis = 1 ./ (new_depth + 0.001);
+%     A = [new_depth(:), ones(size(new_depth(:)))];
+%     b = depth_gt{cur_i}(:);
+%     x = A \ b;
+% %     new_depth = x(1) * new_depth + x(2);
+%     new_depth_dis = 1 ./ (new_depth + 0.001);
     % figure, imshow(rescale(new_depth_dis, 0, 1))
 
     depth_dis = 1 ./ (depth + 0.001);
     
-    cur_depth_gt = depth_gt{cur_i};
-    cur_depth_gt = rescale(cur_depth_gt, 0, 1);
-    gt_dis = 1 ./ (cur_depth_gt + 0.05);
+    % cur_depth_gt = depth_gt{cur_i};
+    % cur_depth_gt = rescale(cur_depth_gt, 0, 1);
+    % gt_dis = 1 ./ (cur_depth_gt + 0.01);
+    % imwrite(rescale(gt_dis, 0, 1), strcat('./data/out/', files(cur_i).name, '_disparity_gt', '.png'))
+
     % figure, imshow(rescale(gt_dis, 0, 1))
 
     imwrite(rescale(new_depth_dis, 0, 1), strcat('./data/out/', files(cur_i).name, '_disparity_ours', '.png'))
     imwrite(rescale(depth_dis, 0, 1), strcat('./data/out/', files(cur_i).name, '_disparity', '.png'))
-    imwrite(rescale(gt_dis, 0, 1), strcat('./data/out/', files(cur_i).name, '_disparity_gt', '.png'))
 
 end
 

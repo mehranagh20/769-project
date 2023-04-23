@@ -97,5 +97,5 @@ target = target.astype(np.float32) / 255
 print(pred.shape)
 print(target.shape)
 
-res = compute_d3r(pred, target, freq_threshold=0.05, threshold=0.05, nsamples=1000, debug=False, mask=None)
+res = compute_d3r(pred, target, freq_threshold=0.04, threshold=0.01, nsamples=4000, debug=False, mask=None)
 print(res)
