@@ -343,10 +343,10 @@ depth_grad_mask = (depth_grad > 0.2);
 % normal_grad_mask = normal_grad > 0.5;
 % figure, imshow(B)
 % figure, imshow(normal)
-depth_grad_mask = imdilate(depth_grad_mask, ones(3, 3));
+% depth_grad_mask = imdilate(depth_grad_mask, ones(3, 3));
 % figure, imshow(depth_grad_mask)
 
-mask = imdilate(mask, ones(3, 3));
+% mask = imdilate(mask, ones(3, 3));
 % mask = mask | depth_grad_mask;
 
 depth_grad = imgradient(depth);
@@ -380,14 +380,15 @@ mask = combined;
 % mask = mask + (1 - depth) / 10;
 % mask = mask + (normal_grad > 0.5);
 % mask = normal_grad + depth_grad;
-mask = imdilate(mask, ones(8, 8));
+% mask = imdilate(mask, ones(8, 8));
 % mask = mask ./ 5;
 mask = mask ./ max(mask(:));
 
 mask = edges + normal_grad / 5 + (edges > 0.02) / 10;
+mask = edges > 0.02;
 % mask = mask ./ max(mask(:));
 mask(mask > 1) = 1;
-mask = imdilate(mask, ones(8, 8));
+% mask = imdilate(mask, ones(8, 8));
 mask = 1 - mask;
 % mask = mask ./ 2;
 
@@ -396,6 +397,7 @@ mask(1:5, :) = 0;
 mask(end - 5:end, :) = 0;
 mask(:, 1:5) = 0;
 mask(:, end - 5:end) = 0;
+figure, imshow(mask)
 
 for i = 1:10
     % set random row to zero
@@ -437,12 +439,14 @@ fitted = x(1) * fitted + x(2);
 % figure, imshow(1 ./ (depth + 0.001))
 
 new_depth_normal = depth_to_normal(new_depth, 1);
+figure, imshow(rescale(new_depth_normal, 0, 1))
+figure, imshow(rescale(mask, 0, 1))
 % figure, imshow(rescale(new_depth_normal, 0, 1))
 
 depth_normal = depth_to_normal(depth, 1);
 % figure, imshow(rescale(depth_normal, 0, 1))
 
-cm_inferno = inferno(100);
+cm_inferno = inferno;
 % colormap(cm_inferno)
 % figure, imshow(rescale(fitted, 0, 1))
 colormap(cm_inferno);
